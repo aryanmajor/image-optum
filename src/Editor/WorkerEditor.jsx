@@ -1,75 +1,140 @@
 import React, { Component } from 'react';
-import { Button, Card,  ButtonGroup } from '@material-ui/core';
+import { Button, Card,  ButtonGroup, Select, MenuItem } from '@material-ui/core';
 import ZoomInIcon from '@material-ui/icons/ZoomIn';
 import ZoomOutIcon from '@material-ui/icons/ZoomOut';
 import RotateRightIcon from '@material-ui/icons/RotateRight';
 import RotateLeftIcon from '@material-ui/icons/RotateLeft';
 import SaveIcon from '@material-ui/icons/Save';
-
+import BrushIcon from '@material-ui/icons/Brush';
 import { Document, Page, pdfjs } from "react-pdf";
+import { drawingHandler } from './utils/drawingHandler';
+
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
 
 
 class WorkerEditor extends Component{
-
-  state={
-    editingOption: '',
-    scale: 1
-  };
-
+  constructor(props){
+    super(props);
+    this.state = {
+      editingOption: '',
+      scale: 1,
+      doc: undefined,
+      currentPage: 1,
+      rotation: 0,
+      drawSelected: false
+    };
+  }
   componentDidMount(){
     console.log('Componet On');
     pdfjs.getDocument('/2.pdf').promise.then((doc)=>{
-      console.log('Pages : ', doc._pdfInfo.numPages);
       this.setState({
-        uploadedDoc:doc
+        renderDoc: doc
       })
+      console.log('Pages : ', doc._pdfInfo.numPages);
+      doc.getPage(1).then(page=>{
+        var myCanvas = document.getElementById('my-canvas');
+        var context = myCanvas.getContext("2d");
+        var viewport = page.getViewport({scale: this.state.scale});
+        myCanvas.width=viewport.width;
+        myCanvas.height = viewport.height;
+        
+        page.render({
+          canvasContext: context,
+          viewport: viewport
+        });
+        
+      });
     }).catch((err)=>{
       console.log(err);
-    })
+    });
   }
 
-  renderCanvas(){
-    this.state.uploadedDoc && this.state.uploadedDoc.getPage(1).then(page=>{
-      var myCanvas = document.getElementById('my-canvas');
-      var context = myCanvas.getContext("2d");
-      var viewport = page.getViewport({scale: this.state.scale});
-      myCanvas.width=viewport.width;
-      myCanvas.height = viewport.height;
+  handleZoomAndRotation(zoom, rotate){
+    var { renderDoc, scale, currentPage, rotation } = this.state;
+    console.log('scale ', scale, ' rotate ', rotation)
+    /*
+      This function handles both zoom and rotate
+      We check if the user wants to zoom or to rotate
+    */
+    if(zoom){
+      // if zoom then zoom in or zoom out
+      if(zoom==='in' && scale<=2.6){
+        scale+=0.2;
+      }
+      else if(zoom==='out' && scale>=0.6){
+        scale-=0.2;
+      }
+    }
+    if(rotate){
+      // if rotate then left or right rotation
+      rotation=rotate==='l' ? (rotation-90)%360 : (rotation+90)%360;
+    }
+    // we set state for future usage
+    this.setState({ scale ,rotation});
+
+    console.log('Pages : ', renderDoc._pdfInfo.numPages);
+    
+    renderDoc.getPage(currentPage).then(page=>{
+    var myCanvas = document.getElementById('my-canvas');
+    var context = myCanvas.getContext("2d");
+    var viewport = page.getViewport({scale, rotation});
+    myCanvas.width=viewport.width;
+    myCanvas.height = viewport.height;
       
       page.render({
         canvasContext: context,
         viewport: viewport
       });
       
+    }).catch((err)=>{
+      console.log(err);
     });
   }
 
-  handleZoom(zoomIn){
-    console.log(zoomIn)
-    this.setState(prevState=>{
-      return({
-        ...prevState,
-        scale: (prevState.scale + 1) ? zoomIn : (prevState.scale - 0.5) 
-      })
-    })
+  handlePageChange(value){
+    this.setState(prevState=> ({ ...prevState, currentPage: value }));
+  }
+
+  renderPageNumber(){
+    if(this.state.renderDoc){
+      
+      const pageNumbers = this.state.renderDoc._pdfInfo.numPages;
+      const menuItems = Array.from({length: pageNumbers}).map((p, i)=>{
+        return(<MenuItem value={i+1} key={i}>Page Number {i+1}</MenuItem>);
+      });
+      return menuItems;
+    }
   }
 
   render(){
+    const { currentPage, drawSelected } = this.state;
     return(
       <React.Fragment>
         <Card>
-        <ButtonGroup size="large" color="primary" aria-label="large outlined primary button group">
-          <Button><SaveIcon />Save</Button>
-          <Button onClick={()=>this.handleZoom(true)}><ZoomInIcon /></Button>
-          <Button onClick={()=>this.handleZoom(false)}><ZoomOutIcon /></Button>
-          <Button><RotateLeftIcon /></Button>
-          <Button><RotateRightIcon /></Button>
-        </ButtonGroup>
+        <Select
+            value={currentPage}
+            onChange={(e)=> this.handlePageChange(e.target.value)}
+            displayEmpty
+            inputProps={{ 'aria-label': 'Without label' }}
+          >
+            {this.renderPageNumber()}
+          </Select>
+          <ButtonGroup size="large" color="primary" aria-label="large outlined primary button group">
+            <Button><SaveIcon />Save</Button>
+            <Button onClick={()=>this.handleZoomAndRotation('in')}><ZoomInIcon /></Button>
+            <Button onClick={()=>this.handleZoomAndRotation('out')}><ZoomOutIcon /></Button>
+            <Button onClick={()=>this.handleZoomAndRotation(undefined, 'l')}><RotateLeftIcon /></Button>
+            <Button onClick={()=>this.handleZoomAndRotation(undefined, 'r')}><RotateRightIcon /></Button>
+            <Button onClick={()=>this.setState(state=> ({ ...state, drawSelected:!state.drawSelected }))} 
+              variant={drawSelected && 'contained'}>
+                <BrushIcon />
+            </Button>
+          </ButtonGroup>
         </Card>
         <div style={{ marginTop: '1vh' }}>
-          <canvas id="my-canvas"></canvas>
-          {this.renderCanvas()}
+          {drawingHandler(drawSelected)}
+          <canvas id="my-canvas" style={{ cursor: drawSelected? 'crosshair' : 'default' }}></canvas>
+          {/* {this.renderCanvas()} */}
         </div>
         </React.Fragment>
         
