@@ -1,12 +1,24 @@
 import React, { Component } from 'react';
-import { Switch, Route, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import { AppBar, Typography, Toolbar, Button } from '@material-ui/core';
-// import Uploader from './Uploader';
+import Uploader from './Uploader';
 import WorkerEditor from './WorkerEditor';
 import DescriptionIcon from '@material-ui/icons/Description';
 
 class Editor extends Component{
-  
+
+  constructor(props){
+    super(props);
+    this.state = {
+      uploadedFile: null,
+      type: null,
+      uploaded: false
+    }
+  }
+  fileUploaded(){
+    this.setState({ uploaded: true });
+  }
+
   render(){
     return(
       <React.Fragment>
@@ -29,14 +41,14 @@ class Editor extends Component{
           </Toolbar>
         </AppBar>
         <div style={{ marginTop: '0vh' }}>
-          {/* <Uploader /> */}
-          <WorkerEditor />
-          {/* <Switch>
-            <Route path='/new-patient' component={NewPatient} />
-            <Route path='/patient/:id' component={PatientDetails} />
-            <Route path='/list' component={PatientList} />
-            <Route path='/' component={Dashboard} />
-          </Switch> */}
+          {!this.state.uploaded && (<Uploader onFileChange={(file)=> {
+
+            this.setState({ uploadedFile: file.uploadedFile, type: file.type},()=> this.fileUploaded())
+          }}
+            
+          />)}
+          { this.state.uploaded && <WorkerEditor uploadedFile={this.state.uploadedFile} onBackButton={()=> this.setState({ uploaded: false })} />}
+          
         </div>
       </React.Fragment>
     );

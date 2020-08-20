@@ -4,6 +4,7 @@ import ZoomInIcon from '@material-ui/icons/ZoomIn';
 import ZoomOutIcon from '@material-ui/icons/ZoomOut';
 import RotateRightIcon from '@material-ui/icons/RotateRight';
 import RotateLeftIcon from '@material-ui/icons/RotateLeft';
+import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import SaveIcon from '@material-ui/icons/Save';
 import BrushIcon from '@material-ui/icons/Brush';
 import { Document, Page, pdfjs } from "react-pdf";
@@ -25,28 +26,31 @@ class WorkerEditor extends Component{
     };
   }
   componentDidMount(){
-    console.log('Componet On');
-    pdfjs.getDocument('/2.pdf').promise.then((doc)=>{
-      this.setState({
-        renderDoc: doc
-      })
-      console.log('Pages : ', doc._pdfInfo.numPages);
-      doc.getPage(1).then(page=>{
-        var myCanvas = document.getElementById('my-canvas');
-        var context = myCanvas.getContext("2d");
-        var viewport = page.getViewport({scale: this.state.scale});
-        myCanvas.width=viewport.width;
-        myCanvas.height = viewport.height;
-        
-        page.render({
-          canvasContext: context,
-          viewport: viewport
+
+    if(this.props.uploadedFile){
+
+      pdfjs.getDocument(this.props.uploadedFile).promise.then((doc)=>{
+        this.setState({
+          renderDoc: doc
+        })
+        console.log('Pages : ', doc._pdfInfo.numPages);
+        doc.getPage(1).then(page=>{
+          var myCanvas = document.getElementById('my-canvas');
+          var context = myCanvas.getContext("2d");
+          var viewport = page.getViewport({scale: this.state.scale});
+          myCanvas.width=viewport.width;
+          myCanvas.height = viewport.height;
+          
+          page.render({
+            canvasContext: context,
+            viewport: viewport
+          });
+          
         });
-        
+      }).catch((err)=>{
+        console.log(err);
       });
-    }).catch((err)=>{
-      console.log(err);
-    });
+    }
   }
 
   handleZoomAndRotation(zoom, rotate){
@@ -111,25 +115,30 @@ class WorkerEditor extends Component{
     return(
       <React.Fragment>
         <Card>
-        <Select
-            value={currentPage}
-            onChange={(e)=> this.handlePageChange(e.target.value)}
-            displayEmpty
-            inputProps={{ 'aria-label': 'Without label' }}
-          >
-            {this.renderPageNumber()}
-          </Select>
-          <ButtonGroup size="large" color="primary" aria-label="large outlined primary button group">
-            <Button><SaveIcon />Save</Button>
-            <Button onClick={()=>this.handleZoomAndRotation('in')}><ZoomInIcon /></Button>
-            <Button onClick={()=>this.handleZoomAndRotation('out')}><ZoomOutIcon /></Button>
-            <Button onClick={()=>this.handleZoomAndRotation(undefined, 'l')}><RotateLeftIcon /></Button>
-            <Button onClick={()=>this.handleZoomAndRotation(undefined, 'r')}><RotateRightIcon /></Button>
-            <Button onClick={()=>this.setState(state=> ({ ...state, drawSelected:!state.drawSelected }))} 
-              variant={drawSelected && 'contained'}>
-                <BrushIcon />
-            </Button>
-          </ButtonGroup>
+
+          <Button variant='text' style={{ position: 'absolute', left: '2vw' }} onClick={this.props.onBackButton}>
+            <ArrowBackIcon />
+          </Button>
+
+          <Select
+              value={currentPage}
+              onChange={(e)=> this.handlePageChange(e.target.value)}
+              displayEmpty
+              inputProps={{ 'aria-label': 'Without label' }}
+            >
+              {this.renderPageNumber()}
+            </Select>
+            <ButtonGroup size="large" color="primary" aria-label="large outlined primary button group">
+              <Button><SaveIcon />Save</Button>
+              <Button onClick={()=>this.handleZoomAndRotation('in')}><ZoomInIcon /></Button>
+              <Button onClick={()=>this.handleZoomAndRotation('out')}><ZoomOutIcon /></Button>
+              <Button onClick={()=>this.handleZoomAndRotation(undefined, 'l')}><RotateLeftIcon /></Button>
+              <Button onClick={()=>this.handleZoomAndRotation(undefined, 'r')}><RotateRightIcon /></Button>
+              <Button onClick={()=>this.setState(state=> ({ ...state, drawSelected:!state.drawSelected }))} 
+                variant={drawSelected && 'contained'}>
+                  <BrushIcon />
+              </Button>
+            </ButtonGroup>
         </Card>
         <div style={{ marginTop: '1vh' }}>
           {drawingHandler(drawSelected)}
