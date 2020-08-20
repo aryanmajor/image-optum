@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { NavLink } from 'react-router-dom';
-import { AppBar, Typography, Toolbar, Button } from '@material-ui/core';
+import { AppBar, Typography, Toolbar, Button, Snackbar } from '@material-ui/core';
+import MuiAlert from '@material-ui/lab/Alert';
 import Uploader from './Uploader';
 import WorkerEditor from './WorkerEditor';
 import DescriptionIcon from '@material-ui/icons/Description';
@@ -12,7 +13,8 @@ class Editor extends Component{
     this.state = {
       uploadedFile: null,
       type: null,
-      uploaded: false
+      uploaded: false,
+      snack:true
     }
   }
   fileUploaded(){
@@ -20,6 +22,7 @@ class Editor extends Component{
   }
 
   render(){
+    const { snack } = this.state;
     return(
       <React.Fragment>
         <AppBar position="static" style={{ backgroundColor: '#1D2A34' }}>
@@ -43,13 +46,28 @@ class Editor extends Component{
         <div style={{ marginTop: '0vh' }}>
           {!this.state.uploaded && (<Uploader onFileChange={(file)=> {
 
-            this.setState({ uploadedFile: file.uploadedFile, type: file.type},()=> this.fileUploaded())
-          }}
-            
+              this.setState({ 
+                snack:{open: true, message: 'File Uploaded', severity: 'success'},
+                uploadedFile: file.uploadedFile,
+                type: file.type
+              },()=> this.fileUploaded())
+            }}
+            errorUploading = {()=>{
+              this.setState({ 
+                snack:{open: true, message: 'Error Occurred', severity: 'error'}
+              })
+            }}
+          
           />)}
           { this.state.uploaded && <WorkerEditor uploadedFile={this.state.uploadedFile} onBackButton={()=> this.setState({ uploaded: false })} />}
           
         </div>
+      
+        <Snackbar open={snack.open} autoHideDuration={6000} onClose={()=> this.setState({ snack: {open: false} })}>
+          <MuiAlert onClose={()=> this.setState({ snack: {open: false} })} severity={snack.severity} elevation={6} variant="filled" >
+            {snack.message}
+          </MuiAlert>
+        </Snackbar>
       </React.Fragment>
     );
   }

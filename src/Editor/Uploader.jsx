@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import { Button } from '@material-ui/core';
+import PublishIcon from '@material-ui/icons/Publish';
+
 
 class Uploader extends Component{
-
   
   
   sendFeedback(files){
@@ -34,7 +35,7 @@ class Uploader extends Component{
 
     }).catch((err)=>{
       console.log(err);
-
+      this.props.errorUploading(err);
     });
 
   }
@@ -45,8 +46,9 @@ class Uploader extends Component{
         <Button
           variant="contained"
           component="label"
-        
+          style={{ marginTop: '2vh' }}
         >
+          <PublishIcon style={{ marginRight: '15px' }} />
           Upload File
           <input
             type="file"
@@ -54,6 +56,7 @@ class Uploader extends Component{
             onChange={(e)=> this.newFile(e)}
           />
         </Button>
+
       </React.Fragment>
         
     );

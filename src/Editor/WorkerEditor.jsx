@@ -77,26 +77,32 @@ class WorkerEditor extends Component{
     this.setState({ scale ,rotation});
 
     console.log('Pages : ', renderDoc._pdfInfo.numPages);
+    this.pageRenderer(currentPage, scale, rotation);
+  }
+
+  pageRenderer(currentPage, scale, rotation){
     
-    renderDoc.getPage(currentPage).then(page=>{
-    var myCanvas = document.getElementById('my-canvas');
-    var context = myCanvas.getContext("2d");
-    var viewport = page.getViewport({scale, rotation});
-    myCanvas.width=viewport.width;
-    myCanvas.height = viewport.height;
-      
-      page.render({
-        canvasContext: context,
-        viewport: viewport
+    this.state.renderDoc.getPage(currentPage).then(page=>{
+      var myCanvas = document.getElementById('my-canvas');
+      var context = myCanvas.getContext("2d");
+      var viewport = page.getViewport({scale, rotation});
+      myCanvas.width=viewport.width;
+      myCanvas.height = viewport.height;
+        
+        page.render({
+          canvasContext: context,
+          viewport: viewport
+        });
+        
+      }).catch((err)=>{
+        console.log(err);
       });
-      
-    }).catch((err)=>{
-      console.log(err);
-    });
   }
 
   handlePageChange(value){
+    const {renderDoc, scale, rotation}=this.state;
     this.setState(prevState=> ({ ...prevState, currentPage: value }));
+    this.pageRenderer(value, scale, rotation);
   }
 
   renderPageNumber(){
